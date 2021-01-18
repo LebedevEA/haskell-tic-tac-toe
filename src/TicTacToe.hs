@@ -141,23 +141,26 @@ move board (x,y) res
       None -> board & ntl x . ntl y .~ res
       _ -> error "move: set not on None"
 
-runGame :: ((Either a Cell -> IO Bool) -> IO Cell) -> (String -> IO ()) -> IO ()
+runGame :: ((Either a Cell -> IO Bool) -> IO (Maybe Cell)) -> (String -> IO ()) -> IO ()
 runGame getMove print = rg mkBoard getMove print O
 
-rg :: Board -> ((Either a Cell -> IO Bool) -> IO Cell) -> (String -> IO ()) -> Res -> IO () 
+rg :: Board -> ((Either a Cell -> IO Bool) -> IO (Maybe Cell)) -> (String -> IO ()) -> Res -> IO ()
 rg board getMove prnt plyr = do 
   prnt $ show board
-  prnt $ show plyr ++ "'s move:"
-  cell <- getMove $ verify board (prnt "bad move!\n")
-  prnt "\n"
-  let board' = move board cell plyr
-  case testWin board' of 
-    O -> endGame board' O prnt
-    X -> endGame board' X prnt
-    None -> 
-      if canMove board'
-      then rg board' getMove prnt $ nxtplyr plyr 
-      else endGame board' None prnt
+  prnt $ show plyr ++ "'s move: "
+  mbcell <- getMove $ verify board (prnt "bad move!\n")
+  case mbcell of
+    Nothing -> prnt "bb\n"
+    Just cell -> do
+      prnt "\n"
+      let board' = move board cell plyr
+      case testWin board' of 
+        O -> endGame board' O prnt
+        X -> endGame board' X prnt
+        None -> 
+          if canMove board'
+          then rg board' getMove prnt $ nxtplyr plyr 
+          else endGame board' None prnt
 
 verify :: Board -> IO () -> Either a Cell -> IO Bool
 verify _ errmsg (Left _) = errmsg >> return False 

@@ -1,7 +1,8 @@
 module Main where
 
-import TicTacToe
+import TicTacToe ( runGame, Cell )
 import Text.ParserCombinators.Parsec
+    ( alphaNum, digit, spaces, many1, parse, ParseError, Parser )
 import Data.Either (fromRight)
 
 int :: Parser Int 
@@ -15,17 +16,29 @@ pairint = do
   y <- spaces >> int
   return (x,y)
 
+word :: Parser String 
+word = spaces >> many1 alphaNum 
+
+isexit :: String -> Bool 
+isexit s
+  | s == "exit" = True 
+  | otherwise = False
+
 parsePairInt :: String -> Either ParseError Cell
 parsePairInt = parse pairint ""
 
-getMove :: (Either ParseError Cell -> IO Bool) -> IO Cell
+getMove :: (Either ParseError Cell -> IO Bool) -> IO (Maybe Cell)
 getMove verify = do 
   line <- getLine
-  v <- verify (parsePairInt line)
-  if v
-  then return $ fromRight' $ parsePairInt line
-  else getMove verify
-    where fromRight' (Right b) = b
+  if isexit line
+  then return Nothing 
+  else do
+    v <- verify (parsePairInt line)
+    if v
+    then return $ r2j $ parsePairInt line
+    else getMove verify
+      where 
+        r2j (Right b) = Just b
 
 main :: IO ()
 main = runGame getMove putStr
