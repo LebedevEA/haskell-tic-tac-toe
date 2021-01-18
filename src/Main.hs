@@ -2,7 +2,7 @@ module Main where
 
 import TicTacToe ( runGame, Cell )
 import Text.ParserCombinators.Parsec
-    ( alphaNum, digit, spaces, many1, parse, ParseError, Parser )
+    ( alphaNum, digit, spaces, many1, parse, ParseError, Parser ) 
 import Data.Either (fromRight)
 
 int :: Parser Int 
