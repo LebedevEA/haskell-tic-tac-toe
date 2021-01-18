@@ -10,6 +10,7 @@ module TicTacToe (
 ) where
 
 import Control.Lens
+    ( (&), (^.), lens, (.~), Field1(..), Field2(..), Field3(..), Lens )
 
 type Cell = (Int,Int)
 
