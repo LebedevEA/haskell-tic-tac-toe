@@ -5,10 +5,13 @@
 
 module TicTacToe (
   runGame,
-  Res(..)
+  Res(..),
+  Cell
 ) where
 
 import Control.Lens
+
+type Cell = (Int,Int)
 
 data Res = None 
           | X 
@@ -105,7 +108,7 @@ mkDiagWinRow b
   | b = zip [0..2] [0..2]
   | otherwise = zip [2,1,0] [0..2]
 
-winRows :: [[(Int,Int)]]
+winRows :: [[Cell]]
 winRows = map mkHorWinRow [0..2] ++ 
           map mkVertWinRow [0..2] ++
           map mkDiagWinRow [True, False]
@@ -113,13 +116,13 @@ winRows = map mkHorWinRow [0..2] ++
 allEqual :: Eq a => [a] -> Bool 
 allEqual (x:xs) = all (== x) xs
 
-testWinRow :: Board -> [(Int,Int)] -> Res
+testWinRow :: Board -> [Cell] -> Res
 testWinRow board pos =
   if allEqual $ map (get board) pos
   then get board (head pos)
   else None
 
-get :: Board -> (Int,Int) -> Res
+get :: Board -> Cell -> Res
 get board (x,y) = board ^. ntl x . ntl y
 
 testWin :: Board -> Res
@@ -138,14 +141,14 @@ move board x y res
       None -> board & ntl x . ntl y .~ res
       _ -> error "move: set not on None"
 
-runGame :: IO (Int,Int) -> (String -> IO ()) -> IO ()
+runGame :: ((Either a Cell -> IO Bool) -> IO Cell) -> (String -> IO ()) -> IO ()
 runGame getMove print = rg mkBoard getMove print O
 
-rg :: Board -> IO (Int,Int) -> (String -> IO ()) -> Res -> IO () 
+rg :: Board -> ((Either a Cell -> IO Bool) -> IO Cell) -> (String -> IO ()) -> Res -> IO () 
 rg board getMove prnt plyr = do 
   prnt $ show board
   prnt $ show plyr ++ "'s move:"
-  (x,y) <- getMove 
+  (x,y) <- getMove $ verify board (prnt "bad move!\n")
   prnt "\n"
   let board' = move board x y plyr
   case testWin board' of 
@@ -156,24 +159,15 @@ rg board getMove prnt plyr = do
       then rg board' getMove prnt $ nxtplyr plyr 
       else endGame board' None prnt
 
-verify :: Board -> IO () -> (Int, Int) -> IO Bool
-verify board errmsg (x,y)
+verify :: Board -> IO () -> Either a Cell -> IO Bool
+verify _ errmsg (Left _) = errmsg >> return False 
+verify board errmsg (Right (x,y))
   | x < 0 || x > 2 = fail
   | y < 0 || y > 2 = fail
   | get board (x,y) /= None = fail
   | otherwise = return True
     where
       fail = errmsg >> return False 
-
-
-  -- | x < 0 || x > 3 || y < 0 || y > 3 
-  --     || get board (x,y) /= None = do
-  --       errmsg
---   --       return False
-
--- inRange n (x,y)
---   | x <= n && n <= y = True 
---   | otherwise = False
 
 canMove :: Board -> Bool 
 canMove board = None `elem` elems

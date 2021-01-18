@@ -8,21 +8,20 @@ int = do
   s <- many1 digit 
   return $ read s 
 
-pairint :: Parser (Int, Int)
+pairint :: Parser Cell
 pairint = do
   x <- spaces >> int 
   y <- spaces >> int
   return (x,y)
 
-parsePairInt :: String -> Either ParseError (Int,Int)
+parsePairInt :: String -> Either ParseError Cell
 parsePairInt = parse pairint ""
 
-getMove :: IO (Int, Int) 
-getMove = do 
+getMove :: (Either ParseError Cell -> IO Bool) -> IO Cell
+getMove verify = do 
   line <- getLine
-  case parsePairInt line of
-    Right p -> return p
-    Left _ -> undefined
+  v <- verify (parsePairInt line)
+  return undefined 
 
 main :: IO ()
 main = runGame getMove putStr
