@@ -133,8 +133,8 @@ testWin board
     where 
       res = map (testWinRow board) winRows
 
-move :: Board -> Int -> Int -> Res -> Board
-move board x y res 
+move :: Board -> Cell -> Res -> Board
+move board (x,y) res 
   | res == None = error "move: set None"
   | otherwise =
     case board ^. ntl x . ntl y of
@@ -148,9 +148,9 @@ rg :: Board -> ((Either a Cell -> IO Bool) -> IO Cell) -> (String -> IO ()) -> R
 rg board getMove prnt plyr = do 
   prnt $ show board
   prnt $ show plyr ++ "'s move:"
-  (x,y) <- getMove $ verify board (prnt "bad move!\n")
+  cell <- getMove $ verify board (prnt "bad move!\n")
   prnt "\n"
-  let board' = move board x y plyr
+  let board' = move board cell plyr
   case testWin board' of 
     O -> endGame board' O prnt
     X -> endGame board' X prnt
