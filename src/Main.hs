@@ -2,6 +2,7 @@ module Main where
 
 import TicTacToe
 import Text.ParserCombinators.Parsec
+import Data.Either (fromRight)
 
 int :: Parser Int 
 int = do 
@@ -21,7 +22,10 @@ getMove :: (Either ParseError Cell -> IO Bool) -> IO Cell
 getMove verify = do 
   line <- getLine
   v <- verify (parsePairInt line)
-  return undefined 
+  if v
+  then return $ fromRight' $ parsePairInt line
+  else getMove verify
+    where fromRight' (Right b) = b
 
 main :: IO ()
 main = runGame getMove putStr
