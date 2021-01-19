@@ -7,7 +7,7 @@ import Parsers ( isexit, parsePairInt )
 
 prntPlyrMv :: (String -> IO ()) -> Res -> IO ()
 prntPlyrMv _ None = return ()
-prntPlyrMv prnt plyr = prnt $ show plyr ++ "'s move!\n"
+prntPlyrMv prnt plyr = prnt $ show plyr ++ "'s move! "
 
 getMoveOffline :: Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
 getMoveOffline plyr prnt verify = do 

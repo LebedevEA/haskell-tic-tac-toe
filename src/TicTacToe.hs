@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
 
@@ -148,7 +147,7 @@ runGame getMove print = rg mkBoard getMove print O
 rg :: Board -> (Res -> (String -> IO ()) -> (Either a Cell -> Maybe String) -> IO (Maybe Cell)) -> (String -> IO ()) -> Res -> IO ()
 rg board getMove prnt plyr = do 
   prnt $ show board
-  prnt $ show plyr ++ "'s move: "
+  -- prnt $ show plyr ++ "'s move: "
   -- mbcell <- getMove $ verify board (prnt "bad move!\n")
   mbcell <- getMove plyr prnt $ verify board
   case mbcell of

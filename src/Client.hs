@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import Network.Socket 
 import Network.Socket.ByteString (recv, sendAll)
 import Data.Text.Encoding (encodeUtf8)
-import TicTacToe ( Cell )
+import TicTacToe ( Cell, Res(..) )
 import Text.ParserCombinators.Parsec ( ParseError ) 
 import Parsers ( isexit, parsePairInt )
 
@@ -18,18 +18,24 @@ main = runTCPClient "127.0.0.1" "3000" $ \s -> do
     putStr "Received: "
     C.putStrLn msg
 
--- getMove :: (Either ParseError Cell -> IO Bool) -> IO (Maybe Cell)
--- getMove verify = do 
+-- getMoveOffline :: Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
+-- getMoveOffline plyr prnt verify = do 
+--   prntPlyrMv prnt plyr
 --   line <- getLine
 --   if isexit line
---   then return Nothing 
+--   then do
+--     prnt "Bye!\n"
+--     return Nothing 
 --   else do
---     v <- verify (parsePairInt line)
---     if v
---     then return $ r2j $ parsePairInt line
---     else getMove verify
---       where 
---         r2j (Right b) = Just b
+--     let parsed = parsePairInt line
+--     let v = verify parsed
+--     case v of
+--       Just error -> do
+--         prnt error
+--         getMoveOffline plyr prnt verify
+--       Nothing -> return $ r2j parsed
+--         where 
+--           r2j (Right b) = Just b
 
 --- Client always has second (as X) move
 
@@ -47,8 +53,8 @@ bs2pr = read . bs2str
 
 
 
-getMove :: Socket -> (Either ParseError Cell -> IO Bool) -> IO (Maybe Cell)
-getMove sock = do undefined 
+getMoveClient :: Socket -> Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
+getMoveClient sock O 
   
 
 
