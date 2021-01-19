@@ -25,3 +25,6 @@ isexit s
 
 parsePairInt :: String -> Either ParseError Cell
 parsePairInt = parse pairint ""
+
+parseWord :: String -> Either ParseError String
+parseWord = parse word ""
