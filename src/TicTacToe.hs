@@ -151,7 +151,7 @@ rg board getMove prnt plyr = do
   -- mbcell <- getMove $ verify board (prnt "bad move!\n")
   mbcell <- getMove plyr prnt $ verify board
   case mbcell of
-    Nothing -> prnt "bb\n"
+    Nothing -> return ()
     Just cell -> do
       prnt "\n"
       let board' = move board cell plyr

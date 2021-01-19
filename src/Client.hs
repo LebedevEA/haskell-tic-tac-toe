@@ -7,35 +7,18 @@ import qualified Data.Text as T
 import Network.Socket 
 import Network.Socket.ByteString (recv, sendAll)
 import Data.Text.Encoding (encodeUtf8)
-import TicTacToe ( Cell, Res(..) )
+import TicTacToe ( runGame, Cell, Res(..) )
 import Text.ParserCombinators.Parsec ( ParseError ) 
 import Parsers ( isexit, parsePairInt )
 
-main :: IO ()
-main = runTCPClient "127.0.0.1" "3000" $ \s -> do
-    sendAll s $ encodeUtf8 $ T.pack "Hello, from client!"
-    msg <- recv s 1024
-    putStr "Received: "
-    C.putStrLn msg
+runClientGame :: IO ()
+runClientGame = runTCPClient "127.0.0.1" "3000" rg
+  where rg sock = runGame (getMoveClient sock) putStr
 
--- getMoveOffline :: Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
--- getMoveOffline plyr prnt verify = do 
---   prntPlyrMv prnt plyr
---   line <- getLine
---   if isexit line
---   then do
---     prnt "Bye!\n"
---     return Nothing 
---   else do
---     let parsed = parsePairInt line
---     let v = verify parsed
---     case v of
---       Just error -> do
---         prnt error
---         getMoveOffline plyr prnt verify
---       Nothing -> return $ r2j parsed
---         where 
---           r2j (Right b) = Just b
+gtFromServer :: Socket -> IO String 
+gtFromServer sock = do
+  msg <- recv sock 1024
+  return $ bs2str msg
 
 --- Client always has second (as X) move
 
@@ -45,18 +28,42 @@ str2bs = encodeUtf8 . T.pack
 bs2str :: C.ByteString -> String 
 bs2str = read . show -- may not work :(
 
-pr2bs :: (Int,Int) -> C.ByteString
-pr2bs = str2bs . show
+r2j :: Either a b -> Maybe b
+r2j (Right b) = Just b
 
-bs2pr :: C.ByteString -> (Int,Int)
-bs2pr = read . bs2str
-
-
+handle :: Socket -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO String -> Bool -> IO (Maybe Cell)
+handle sock prnt verify gtLn doSend = do
+  line <- gtLn 
+  if isexit line
+  then do
+    prnt "Bye!\n"
+    if doSend 
+    then sendAll sock $ str2bs line
+    else do return ()
+    return Nothing 
+  else do
+    let parsed = parsePairInt line
+    let v =verify parsed
+    case v of
+      Just error -> do
+        prnt error
+        getMoveClient sock None prnt verify
+      Nothing -> do
+        if doSend 
+        then sendAll sock $ str2bs line
+        else do return ()
+        return $ r2j parsed
 
 getMoveClient :: Socket -> Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
-getMoveClient sock O 
-  
-
+getMoveClient sock None prnt verify = do
+  prnt "Try again: " 
+  handle sock prnt verify getLine True
+getMoveClient sock O prnt verify = do
+  prnt "Your move: "
+  handle sock prnt verify getLine True 
+getMoveClient sock X prnt verify = do
+  prnt "Opponent's move...\n"
+  handle sock prnt verify (gtFromServer sock) False 
 
 runTCPClient :: HostName -> ServiceName -> (Socket -> IO a) -> IO a
 runTCPClient host port client = withSocketsDo $ do
@@ -64,9 +71,9 @@ runTCPClient host port client = withSocketsDo $ do
     E.bracket (open addr) close client
   where
     resolve = do
-        let hints = defaultHints { addrSocketType = Stream }
-        head <$> getAddrInfo (Just hints) (Just host) (Just port)
+      let hints = defaultHints { addrSocketType = Stream }
+      head <$> getAddrInfo (Just hints) (Just host) (Just port)
     open addr = do
-        sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-        connect sock $ addrAddress addr
-        return sock
+      sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+      connect sock $ addrAddress addr
+      return sock
