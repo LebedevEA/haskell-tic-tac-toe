@@ -1,25 +1,20 @@
 module Main where
 
-import TicTacToe ( runGame, Cell, Res(..), InputGetter )
-
-import Text.ParserCombinators.Parsec ( ParseError ) 
-import Parsers ( isexit, parsePairInt )
-import Util ( r2j, handle )
-
-getMoveOffline :: Res -> InputGetter
-getMoveOffline r verify 
-  | r == None = do
-      putStr "Try again: " 
-      handle ig Nothing verify getLine
-  | r == X = do
-      putStr "X's move: "
-      handle ig Nothing verify getLine 
-  | r == O = do
-      putStr "O's move: "
-      handle ig Nothing verify getLine
-    where 
-      ig = getMoveOffline None
+import Server ( runServerGame )
+import Client ( runClientGame )
+import Offline ( runOfflineGame )
+import Parsers ( parseWord )
+import System.IO ( hSetBuffering, stdout, BufferMode( NoBuffering ) )
 
 main :: IO ()
-main = runGame getMoveOffline
+main = do
+  hSetBuffering stdout NoBuffering 
+  putStr "Game mode: " 
+  line <- getLine 
+  case parseWord line of
+    Right "offline" -> runOfflineGame 
+    Right "server" -> runServerGame 
+    Right "client" -> runClientGame
+    _ -> putStrLn "Parse error!" >> main
+
 
