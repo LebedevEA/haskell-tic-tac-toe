@@ -142,14 +142,15 @@ move board (x,y) res
       None -> board & ntl x . ntl y .~ res
       _ -> error "move: set not on None"
 
-runGame :: ((Either a Cell -> IO Bool) -> IO (Maybe Cell)) -> (String -> IO ()) -> IO ()
+runGame :: (Res -> (String -> IO ()) -> (Either a Cell -> Maybe String) -> IO (Maybe Cell)) -> (String -> IO ()) -> IO ()
 runGame getMove print = rg mkBoard getMove print O
 
-rg :: Board -> ((Either a Cell -> IO Bool) -> IO (Maybe Cell)) -> (String -> IO ()) -> Res -> IO ()
+rg :: Board -> (Res -> (String -> IO ()) -> (Either a Cell -> Maybe String) -> IO (Maybe Cell)) -> (String -> IO ()) -> Res -> IO ()
 rg board getMove prnt plyr = do 
   prnt $ show board
   prnt $ show plyr ++ "'s move: "
-  mbcell <- getMove $ verify board (prnt "bad move!\n")
+  -- mbcell <- getMove $ verify board (prnt "bad move!\n")
+  mbcell <- getMove plyr prnt $ verify board
   case mbcell of
     Nothing -> prnt "bb\n"
     Just cell -> do
@@ -163,15 +164,15 @@ rg board getMove prnt plyr = do
           then rg board' getMove prnt $ nxtplyr plyr 
           else endGame board' None prnt
 
-verify :: Board -> IO () -> Either a Cell -> IO Bool
-verify _ errmsg (Left _) = errmsg >> return False 
-verify board errmsg (Right (x,y))
-  | x < 0 || x > 2 = fail
-  | y < 0 || y > 2 = fail
-  | get board (x,y) /= None = fail
-  | otherwise = return True
-    where
-      fail = errmsg >> return False 
+verify :: Board -> Either a Cell -> Maybe String -- Just error | Nothing
+verify _ (Left _) = Just "Parse error\n" 
+verify board (Right pos@(x,y))
+  | x < 0 = Just $ "x = " ++ show x ++ " can't be less than 0!\n"
+  | x > 2 = Just $ "x = " ++ show x ++ " can't be greater than 2!\n"
+  | y < 0 = Just $ "y = " ++ show y ++ " can't be less than 0!\n"
+  | y > 2 = Just $ "y = " ++ show y ++ " can't be greater than 2!\n"
+  | get board (x,y) /= None = Just $ show pos ++ " isn't empty!\n"
+  | otherwise = Nothing
 
 canMove :: Board -> Bool 
 canMove board = None `elem` elems
