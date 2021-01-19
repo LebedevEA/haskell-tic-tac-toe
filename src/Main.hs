@@ -1,33 +1,25 @@
 module Main where
 
-import TicTacToe ( runGame, Cell, Res(..) )
+import TicTacToe ( runGame, Cell, Res(..), InputGetter )
 
 import Text.ParserCombinators.Parsec ( ParseError ) 
 import Parsers ( isexit, parsePairInt )
+import Util ( r2j, handle )
 
-prntPlyrMv :: (String -> IO ()) -> Res -> IO ()
-prntPlyrMv _ None = return ()
-prntPlyrMv prnt plyr = prnt $ show plyr ++ "'s move! "
-
-getMoveOffline :: Res -> (String -> IO ()) -> (Either ParseError Cell -> Maybe String) -> IO (Maybe Cell)
-getMoveOffline plyr prnt verify = do 
-  prntPlyrMv prnt plyr
-  line <- getLine
-  if isexit line
-  then do
-    prnt "Bye!\n"
-    return Nothing 
-  else do
-    let parsed = parsePairInt line
-    let v = verify parsed
-    case v of
-      Just error -> do
-        prnt error
-        getMoveOffline plyr prnt verify
-      Nothing -> return $ r2j parsed
-        where 
-          r2j (Right b) = Just b
+getMoveOffline :: Res -> InputGetter
+getMoveOffline r verify 
+  | r == None = do
+      putStr "Try again: " 
+      handle ig Nothing verify getLine
+  | r == X = do
+      putStr "X's move: "
+      handle ig Nothing verify getLine 
+  | r == O = do
+      putStr "O's move: "
+      handle ig Nothing verify getLine
+    where 
+      ig = getMoveOffline None
 
 main :: IO ()
-main = runGame getMoveOffline putStr
+main = runGame getMoveOffline
 

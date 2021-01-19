@@ -5,13 +5,18 @@
 module TicTacToe (
   runGame,
   Res(..),
-  Cell
+  Cell,
+  ParseVerifier,
+  InputGetter
 ) where
 
 import Control.Lens
     ( (&), (^.), lens, (.~), Field1(..), Field2(..), Field3(..), Lens )
+import Text.ParserCombinators.Parsec ( ParseError )
 
 type Cell = (Int,Int)
+type ParseVerifier = Either ParseError Cell -> Maybe String
+type InputGetter = ParseVerifier -> IO (Maybe Cell)
 
 data Res = None 
           | X 
@@ -40,7 +45,7 @@ instance Show Board where
   show (Board a b c) =
     show a ++ "\n" ++
     show b ++ "\n" ++
-    show c ++ "\n"
+    show c
 
 mkRow :: Row
 mkRow = Row None None None
@@ -141,27 +146,25 @@ move board (x,y) res
       None -> board & ntl x . ntl y .~ res
       _ -> error "move: set not on None"
 
-runGame :: (Res -> (String -> IO ()) -> (Either a Cell -> Maybe String) -> IO (Maybe Cell)) -> (String -> IO ()) -> IO ()
-runGame getMove print = rg mkBoard getMove print O
+runGame :: (Res -> InputGetter) -> IO ()
+runGame getMove = rg mkBoard getMove O
 
-rg :: Board -> (Res -> (String -> IO ()) -> (Either a Cell -> Maybe String) -> IO (Maybe Cell)) -> (String -> IO ()) -> Res -> IO ()
-rg board getMove prnt plyr = do 
-  prnt $ show board
-  -- prnt $ show plyr ++ "'s move: "
-  -- mbcell <- getMove $ verify board (prnt "bad move!\n")
-  mbcell <- getMove plyr prnt $ verify board
+rg :: Board -> (Res -> InputGetter) -> Res -> IO ()
+rg board getMove plyr = do 
+  print board
+  mbcell <- getMove plyr $ verify board
   case mbcell of
     Nothing -> return ()
     Just cell -> do
-      prnt "\n"
+      putStrLn ""
       let board' = move board cell plyr
       case testWin board' of 
-        O -> endGame board' O prnt
-        X -> endGame board' X prnt
+        O -> endGame board' O
+        X -> endGame board' X
         None -> 
           if canMove board'
-          then rg board' getMove prnt $ nxtplyr plyr 
-          else endGame board' None prnt
+          then rg board' getMove $ nxtplyr plyr 
+          else endGame board' None
 
 verify :: Board -> Either a Cell -> Maybe String -- Just error | Nothing
 verify _ (Left _) = Just "Parse error\n" 
@@ -178,10 +181,10 @@ canMove board = None `elem` elems
   where 
     elems = map (get board) $ (,) <$> [0..2] <*> [0..2]
 
-endGame :: Board -> Res -> (String -> IO ()) -> IO ()
-endGame board res prnt = do
-  prnt $ show board
-  prnt $ showGameRes res
+endGame :: Board -> Res -> IO ()
+endGame board res = do
+  print board
+  putStr $ showGameRes res
 
 showGameRes :: Res -> String 
 showGameRes res 
